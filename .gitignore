@@ -3,3 +3,4 @@ __pycache__/
 environment.yml
 .vscode/
 binance/
+.ipynb_checkpoints/
