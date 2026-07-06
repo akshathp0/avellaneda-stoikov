@@ -4,7 +4,7 @@ from pathlib import Path
 bt_path = Path('binance/bt.parquet')
 at_path = Path('binance/at.parquet')
 
-def load():
+def load() -> tuple[pd.DataFrame, pd.DataFrame]:
     if bt_path.exists() and at_path.exists():
         bt = pd.read_parquet(bt_path)
         at = pd.read_parquet(at_path)

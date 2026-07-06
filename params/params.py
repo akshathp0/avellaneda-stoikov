@@ -6,20 +6,24 @@ import yaml
 with open("config.yml", "r") as file:
     config = yaml.safe_load(file)
 
+# sigma parameters:
 SIGMA_WINDOW = config['sigma_window']
 GRID_FREQUENCY = config['grid_frequency']
 HALF_LIFE = config['half_life']
 EWMA_WARMUP = config['ewma_warmup']
+
 TRAINING_SLICE = config['training_slice']
 
-mid_path = Path(f'binance/mid_{GRID_FREQUENCY}.parquet')
-
-def to_seconds(s):
+def to_seconds(s) -> float:
+    if not isinstance(s, str):
+        raise TypeError("Must be string")
     f = pd.Timedelta(s).total_seconds()
 
     return f
 
-def build_mid(bt):
+def build_mid(bt, grid_frequency = GRID_FREQUENCY) -> pd.DataFrame:
+    mid_path = Path(f'binance/mid_{grid_frequency}.parquet')
+
     if mid_path.exists():
         mid = pd.read_parquet(mid_path)
     else:
@@ -30,32 +34,55 @@ def build_mid(bt):
 
         deduped_bools = bt_c.index.duplicated(keep = 'last')
         deduped = bt_c[~deduped_bools]
-        mid = deduped.resample(GRID_FREQUENCY).ffill() # refactor to grid frequency
+        mid = deduped.resample(grid_frequency).ffill() # refactor to grid frequency
         mid[['mid_price']].to_parquet(mid_path)
 
     return mid[['mid_price']]
 
-def estimate_rolling_vol(mid):
+def estimate_rolling_vol(mid, grid_frequency = GRID_FREQUENCY, sigma_window = SIGMA_WINDOW) -> pd.Series:
+    mid = mid['mid_price']
     dS = mid.diff() # increments
 
-    dt_seconds = to_seconds(GRID_FREQUENCY)
-    var = dS.rolling(SIGMA_WINDOW).var() / dt_seconds # Var(delta(S)) / delta(T) yields $^2 / second
-    sigma = np.sqrt(var) # $ / sqrt(second)
-    cutoff = sigma.index[0] + pd.Timedelta(SIGMA_WINDOW)
+    dt_seconds = to_seconds(grid_frequency)
+    var = dS.rolling(sigma_window).var() / dt_seconds 
+    sigma = np.sqrt(var) 
+    cutoff = sigma.index[0] + pd.Timedelta(sigma_window)
     sigma.loc[:cutoff] = np.nan
 
     return sigma
 
-def estimate_ewma_vol(mid):
+def estimate_ewma_vol(mid, grid_frequency = GRID_FREQUENCY, half_life = HALF_LIFE, warmup = EWMA_WARMUP) -> pd.Series:
+    mid = mid['mid_price']
     dS = mid.diff()
 
-    dt_seconds = to_seconds(GRID_FREQUENCY)
-    var = dS.ewm(halflife = HALF_LIFE / dt_seconds).var() / dt_seconds
-    sigma = np.sqrt(var)
-    cutoff = sigma.index[0] + EWMA_WARMUP * pd.Timedelta(HALF_LIFE)
+    dt_seconds = to_seconds(grid_frequency)
+    var = dS.ewm(halflife = to_seconds(half_life) / dt_seconds).var() / dt_seconds # Var(delta(S)) / delta(T) yields $^2 / second
+    sigma = np.sqrt(var) # $ / sqrt(second)
+    cutoff = sigma.index[0] + warmup * pd.Timedelta(half_life)
     sigma.loc[:cutoff] = np.nan
 
     return sigma
 
-def return_training_slice(param):
-    return param.loc[:TRAINING_SLICE]
+def measure_sigma(bt, grid_frequency, training_slice = TRAINING_SLICE) -> float:
+    mid = build_mid(bt, grid_frequency = grid_frequency)
+
+    mid = mid['mid_price']
+    mid = return_training_slice(mid, training_slice = training_slice)
+    dS = mid.diff()
+    dt_seconds = to_seconds(grid_frequency)
+    var = dS.var() / dt_seconds 
+    sigma = np.sqrt(var) 
+
+    return sigma
+
+def return_grid_sigmas(bt) -> dict:
+    frequency_map = {}
+    grid_frequencies = ['100ms', '500ms', '1s', '5s', '30s', '1min', '2min', '5min']
+    for grid_frequency in grid_frequencies:
+        sigma = measure_sigma(bt, grid_frequency)
+        frequency_map[grid_frequency] = sigma
+    
+    return frequency_map
+
+def return_training_slice(param, training_slice = TRAINING_SLICE) -> pd.Series:
+    return param.loc[:training_slice]

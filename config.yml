@@ -1,6 +1,6 @@
 # parameters
-training_slice: 2024-03-26 23:59:59
+training_slice: '2024-03-27'
 sigma_window: 1h
 grid_frequency: 1s
-half_life: 900
+half_life: 10min
 ewma_warmup: 3
