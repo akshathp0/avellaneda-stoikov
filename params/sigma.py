@@ -21,23 +21,27 @@ def to_seconds(s) -> float:
 
     return f
 
-def build_mid(bt, grid_frequency = GRID_FREQUENCY) -> pd.DataFrame:
+def build_mid(bt, grid_frequency = GRID_FREQUENCY) -> tuple[pd.DataFrame, pd.DataFrame]:
     mid_path = Path(f'binance/mid_{grid_frequency}.parquet')
+    deduped_path = Path('binance/deduped.parquet')
 
-    if mid_path.exists():
+    if mid_path.exists() and deduped_path.exists():
         mid = pd.read_parquet(mid_path)
+        deduped = pd.read_parquet(deduped_path)
     else:
         bt_c = bt[['update_id', 'best_bid_price', 'best_ask_price', 'transaction_time']].copy()
         bt_c = bt_c.sort_values('update_id')
         bt_c['mid_price'] = (bt_c['best_bid_price'] + bt_c['best_ask_price']) / 2
         bt_c = bt_c.set_index(pd.to_datetime(bt_c['transaction_time'], unit = 'ms'))
 
-        deduped_bools = bt_c.index.duplicated(keep = 'last')
+        deduped_bools = bt_c.index.duplicated(keep = 'last') # keep only last trade for every ms
         deduped = bt_c[~deduped_bools]
+        deduped[['mid_price']].to_parquet(deduped_path)
+
         mid = deduped.resample(grid_frequency).ffill() # refactor to grid frequency
         mid[['mid_price']].to_parquet(mid_path)
 
-    return mid[['mid_price']]
+    return mid[['mid_price']], deduped[['mid_price']]
 
 def estimate_rolling_vol(mid, grid_frequency = GRID_FREQUENCY, sigma_window = SIGMA_WINDOW) -> pd.Series:
     mid = mid['mid_price']
@@ -64,7 +68,7 @@ def estimate_ewma_vol(mid, grid_frequency = GRID_FREQUENCY, half_life = HALF_LIF
     return sigma
 
 def measure_sigma(bt, grid_frequency, training_slice = TRAINING_SLICE) -> float:
-    mid = build_mid(bt, grid_frequency = grid_frequency)
+    mid, _ = build_mid(bt, grid_frequency = grid_frequency)
 
     mid = mid['mid_price']
     mid = return_training_slice(mid, training_slice = training_slice)
