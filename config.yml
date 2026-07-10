@@ -7,3 +7,6 @@ ewma_warmup: 3
 
 # intensity / rate-parameter parameters
 event_gap: 1ms
+delta_min: 0.05 # tick size
+delta_max: 50
+delta_points: 30

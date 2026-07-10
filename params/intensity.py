@@ -6,6 +6,9 @@ with open("config.yml", "r") as file:
     config = yaml.safe_load(file)
 
 EVENT_GAP = config['event_gap']
+DELTA_MIN = config['delta_min']
+DELTA_MAX = config['delta_max']
+DELTA_POINTS = config['delta_points']
 
 def match_trades(at, deduped) -> pd.DataFrame:
     at_c = at.copy()
@@ -27,7 +30,7 @@ def match_trades(at, deduped) -> pd.DataFrame:
     return matched
 
 def calculate_spread(matched) -> pd.DataFrame:
-    # is_buyer_maker = True -> seller is aggressor (sells below mid)
+    # is_buyer_maker = True -> seller matched bid (sells below mid, buyer wants cheap)
     # spread: mid_price - price
 
     spreads = matched.copy()
@@ -57,3 +60,28 @@ def event_aggregation(spreads, event_gap = EVENT_GAP):
     )
 
     return events_agg
+
+def delta_grid(min = DELTA_MIN, max = DELTA_MAX, points = DELTA_POINTS) -> np.ndarray:
+    return np.geomspace(min, max, points) # geometric progression of delta values
+
+def survival_counts(events) -> pd.DataFrame:
+    # go thru delta grid and count how many bids / asks
+    # would be filled by max_depth
+    # on sliced train data
+
+    grid = delta_grid()
+
+    is_bid = events['is_buyer_maker'] # mask as series
+    sorted_true = events.loc[is_bid, 'max_depth'].sort_values().to_numpy()
+    sorted_false = events.loc[~is_bid, 'max_depth'].sort_values().to_numpy()
+
+    counts = pd.DataFrame(index = grid)
+    counts['bid_fills'] = len(sorted_true) - np.searchsorted(sorted_true, grid, side = 'left')
+    counts['ask_fills'] = len(sorted_false) - np.searchsorted(sorted_false, grid, side = 'left')
+
+    delta_t = (events['transact_time'].iloc[-1] - events['transact_time'].iloc[0]).total_seconds()
+    counts['lambda_bid'] = counts['bid_fills'] / delta_t
+    counts['lambda_ask'] = counts['ask_fills'] / delta_t
+
+    return counts
+
