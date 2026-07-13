@@ -9,6 +9,8 @@ EVENT_GAP = config['event_gap']
 DELTA_MIN = config['delta_min']
 DELTA_MAX = config['delta_max']
 DELTA_POINTS = config['delta_points']
+SLICE_MIN = config['slice_min']
+SLICE_MAX = config['slice_max']
 
 def match_trades(at, deduped) -> pd.DataFrame:
     at_c = at.copy()
@@ -85,3 +87,17 @@ def survival_counts(events) -> pd.DataFrame:
 
     return counts
 
+def slice_delta(counts, min = SLICE_MIN, max = SLICE_MAX):
+    return counts.loc[min:max]
+
+def regress_intensity(x, y):
+    # lambda(delta) = Ae^(-k*delta)
+    # ln(lambda) = ln(A) - k*delta
+    # slope is -k, intercept is ln(A)
+
+    y = np.log(y)
+    k_neg, log_A = np.polyfit(x, y, 1)
+    k = -k_neg
+    A = np.exp(log_A)
+
+    return A, k

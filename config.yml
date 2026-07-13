@@ -10,3 +10,9 @@ event_gap: 1ms
 delta_min: 0.05 # tick size
 delta_max: 50
 delta_points: 30
+slice_min: 0.1
+slice_max: 5
+
+# backtest parameters
+A: 1.13
+k: 0.47
