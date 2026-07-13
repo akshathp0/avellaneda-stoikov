@@ -16,3 +16,5 @@ slice_max: 5
 # backtest parameters
 A: 1.13
 k: 0.47
+gamma: 10**-3
+tau: 300
