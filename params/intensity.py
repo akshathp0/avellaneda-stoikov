@@ -58,8 +58,13 @@ def event_aggregation(spreads, event_gap = EVENT_GAP):
         max_depth = ('depth', 'max'),
         trade_quantity = ('quantity', 'sum'),
         is_buyer_maker = ('is_buyer_maker', 'first'),
-        transact_time = ('transact_time', 'first')
+        transact_time = ('transact_time', 'first'),
+        price_min = ('price', 'min'),
+        price_max = ('price', 'max'),
     )
+
+    events_agg['event_id'] = events_agg.index
+    events_agg = events_agg.set_index('transact_time')
 
     return events_agg
 
@@ -81,16 +86,16 @@ def survival_counts(events) -> pd.DataFrame:
     counts['bid_fills'] = len(sorted_true) - np.searchsorted(sorted_true, grid, side = 'left')
     counts['ask_fills'] = len(sorted_false) - np.searchsorted(sorted_false, grid, side = 'left')
 
-    delta_t = (events['transact_time'].iloc[-1] - events['transact_time'].iloc[0]).total_seconds()
+    delta_t = (events.index[-1] - events.index[0]).total_seconds()
     counts['lambda_bid'] = counts['bid_fills'] / delta_t
     counts['lambda_ask'] = counts['ask_fills'] / delta_t
 
     return counts
 
-def slice_delta(counts, min = SLICE_MIN, max = SLICE_MAX):
+def slice_delta(counts, min = SLICE_MIN, max = SLICE_MAX) -> pd.DataFrame:
     return counts.loc[min:max]
 
-def regress_intensity(x, y):
+def regress_intensity(x, y) -> tuple[int, int]:
     # lambda(delta) = Ae^(-k*delta)
     # ln(lambda) = ln(A) - k*delta
     # slope is -k, intercept is ln(A)

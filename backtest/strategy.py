@@ -8,7 +8,7 @@ class Strategy:
         self.tau = tau
         self.k = k
 
-    def quote(self, mid, sigma):
+    def quote(self, mid, sigma) -> tuple[float, float]:
         # r(s, t) = s - q * gamma * sigma^2 * tau
         # delta_a + delta_b = gamma * sigma^2 * tau + 2/gamma * ln(1 + gamma / k)
 
