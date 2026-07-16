@@ -1,5 +1,6 @@
 # sigma parameters
-training_slice: '2024-03-27'
+train_end: '2024-03-27'
+test_start: '2024-03-28'
 sigma_window: 1h
 grid_frequency: 1s
 half_life: 10min
@@ -16,5 +17,6 @@ slice_max: 5
 # backtest parameters
 A: 1.13
 k: 0.47
-gamma: 10**-3
-tau: 300
+gamma: 1.0e-3
+tau: 300 # seconds
+quote_size: 0.01

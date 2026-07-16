@@ -12,7 +12,7 @@ GRID_FREQUENCY = config['grid_frequency']
 HALF_LIFE = config['half_life']
 EWMA_WARMUP = config['ewma_warmup']
 
-TRAINING_SLICE = config['training_slice']
+TRAIN_END = config['train_end']
 
 def to_seconds(s) -> float:
     if not isinstance(s, str):
@@ -67,11 +67,11 @@ def estimate_ewma_vol(mid, grid_frequency = GRID_FREQUENCY, half_life = HALF_LIF
 
     return sigma
 
-def measure_sigma(bt, grid_frequency, training_slice = TRAINING_SLICE) -> float:
+def measure_sigma(bt, grid_frequency, train_end = TRAIN_END) -> float:
     mid, _ = build_mid(bt, grid_frequency = grid_frequency)
 
     mid = mid['mid_price']
-    mid = return_training_slice(mid, training_slice = training_slice)
+    mid = slice_window(mid, end = train_end)
     dS = mid.diff()
     dt_seconds = to_seconds(grid_frequency)
     var = dS.var() / dt_seconds 
@@ -88,5 +88,5 @@ def return_grid_sigmas(bt) -> dict:
     
     return frequency_map
 
-def return_training_slice(param, training_slice = TRAINING_SLICE) -> pd.Series:
-    return param.loc[:training_slice]
+def slice_window(param, start = None, end = TRAIN_END) -> pd.Series:
+    return param.loc[start:end]
