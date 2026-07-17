@@ -21,19 +21,19 @@ QUOTE_SIZE = config['quote_size']
 
 TRAIN_END = config['train_end']
 
-def run(k = K, gamma = GAMMA, tau = TAU, size = QUOTE_SIZE, start = None, end = TRAIN_END) -> pd.DataFrame:
-    mid, sigma, events = load_artifacts()
+def run(mid, sigma, events,
+        strategy_cls = backtest.strategy.Strategy, strategy_kwargs = None,
+        size = QUOTE_SIZE, start = None, end = TRAIN_END) -> pd.DataFrame:
     
     mid = params.sigma.slice_window(mid, start = start, end = end)
     sigma = params.sigma.slice_window(sigma, start = start, end = end)
     events = params.sigma.slice_window(events, start = start, end = end)
 
-    strategy = backtest.strategy.Strategy(gamma = gamma, tau = tau, k = k)
+    kwargs = strategy_kwargs or {'gamma': GAMMA, 'tau': TAU, 'k': K}
+    strategy = strategy_cls(**kwargs)
     backtester = backtest.backtester.Backtester(strategy, size)
 
-    results = backtester.loop(mid, sigma, events)
-
-    return results
+    return backtester.loop(mid, sigma, events)
 
 def load_artifacts() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     bt, at = data.d_load.load()
@@ -45,5 +45,3 @@ def load_artifacts() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     events = params.intensity.event_aggregation(spreads)
 
     return mid, sigma, events
-
-

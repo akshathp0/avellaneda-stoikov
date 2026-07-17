@@ -20,3 +20,6 @@ k: 0.47
 gamma: 1.0e-3
 tau: 300 # seconds
 quote_size: 0.01
+
+# symmetric strategy parameterss
+half_spread: 8.88
