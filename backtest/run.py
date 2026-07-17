@@ -45,3 +45,16 @@ def load_artifacts() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     events = params.intensity.event_aggregation(spreads)
 
     return mid, sigma, events
+
+def summarize(r, label):
+    inv = (r['q'].shift() * r['mid'].diff()).cumsum().dropna().iloc[-1]
+    w = r['wealth'] - r['wealth'].dropna().iloc[0]
+    
+    return {'strategy': label,
+            'terminal_wealth': w.dropna().iloc[-1],
+            'spread_pnl': w.dropna().iloc[-1] - inv,
+            'inv_pnl': inv,
+            'bid_fills': r['bid_filled'].sum(), 'ask_fills': r['ask_filled'].sum(),
+            'mean_spread': (r['ask_quote'] - r['bid_quote']).mean(),
+            'q_std': r['q'].std(), 'mean_abs_q': r['q'].abs().mean(), 'max_abs_q': r['q'].abs().max()
+            }
