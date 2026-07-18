@@ -96,6 +96,9 @@ def slice_delta(counts, min = SLICE_MIN, max = SLICE_MAX) -> pd.DataFrame:
     return counts.loc[min:max]
 
 def regress_intensity(x, y) -> tuple[int, int]:
+    # A: base arrival rate (fills/sec at the mid)
+    # k: quote depth decay rate (1/dollars)
+
     # lambda(delta) = Ae^(-k*delta)
     # ln(lambda) = ln(A) - k*delta
     # slope is -k, intercept is ln(A)

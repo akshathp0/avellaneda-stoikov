@@ -68,6 +68,8 @@ def estimate_ewma_vol(mid, grid_frequency = GRID_FREQUENCY, half_life = HALF_LIF
     return sigma
 
 def measure_sigma(bt, grid_frequency, train_end = TRAIN_END) -> float:
+    # sigma: standard deviation of difference in mid-prices
+
     mid, _ = build_mid(bt, grid_frequency = grid_frequency)
 
     mid = mid['mid_price']
