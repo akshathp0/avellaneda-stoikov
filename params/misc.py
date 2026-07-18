@@ -6,13 +6,14 @@ import numpy as np
 import pandas as pd
 from statsmodels.tsa.stattools import acf
 import params.sigma
+import backtest.run
 import yaml
 
 with open("config.yml", "r") as file:
     config = yaml.safe_load(file)
 
 TAU = config['tau']
-
+K = config['k']
 
 def compute_tau(r) -> tuple[int, int]:
     # tau: timescale over which position persists
@@ -27,7 +28,7 @@ def compute_tau(r) -> tuple[int, int]:
 
     return f, np.argmax(f < np.exp(-1))
 
-def compute_half_life(mid, tau = TAU) -> dict:
+def sweep_half_life(mid, tau = TAU) -> dict:
     # half life: how long it takes for a measurement's weight to half
     # exponentially down-weight older squared increments when computing current vol
 
@@ -48,3 +49,16 @@ def compute_half_life(mid, tau = TAU) -> dict:
         qlikes[h] = (ratio - np.log(ratio) - 1).mean() # QLIKE loss function, penalizes under-forecasting
 
     return qlikes
+
+def sweep_gamma(k = K, tau = TAU) -> dict:
+    mid, sigma, events = backtest.run.load_artifacts()
+    gammas = np.geomspace(1e-4, 1e-2, 8)
+
+    g_results = {}
+    rows = []
+    for g in gammas:
+        g_result = backtest.run.run(mid, sigma, events, strategy_kwargs = {'gamma': g, 'tau': tau, 'k': k})
+        g_results[g] = g_result
+        rows.append({'gamma': g, **backtest.run.summarize(g_result, f'g={g:.1e}')})
+
+    return g_results, rows
