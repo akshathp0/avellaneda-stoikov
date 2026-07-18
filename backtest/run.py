@@ -46,7 +46,7 @@ def load_artifacts() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
 
     return mid, sigma, events
 
-def summarize(r, label):
+def summarize(r, label) -> pd.DataFrame:
     inv = (r['q'].shift() * r['mid'].diff()).cumsum().dropna().iloc[-1]
     w = r['wealth'] - r['wealth'].dropna().iloc[0]
     
