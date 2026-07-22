@@ -1,0 +1,8 @@
+parameter,value,method,source
+A,1.13 /s,log-linear fit of λ(δ),"train, δ∈[0.10, 5]"
+k,0.47 /$,"log-linear fit of λ(δ), slope","train, δ∈[0.10, 5]"
+tau,430s,inventory ACF 1/e decay time,"train, gamma 1e-3 run"
+half_life,15min,QLIKE vs 430s realized variance,train
+gamma,7.2e-4,inventory-variance saturation,"gamma sweep, train"
+grid,1s,volatility plateau,train
+quote_size,0.01 BTC,fixed (below typical event size),—

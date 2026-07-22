@@ -9,17 +9,8 @@ import backtest.backtester
 import data.d_load
 
 import pandas as pd
-import yaml
 
-with open("config.yml", "r") as file:
-    config = yaml.safe_load(file)
-
-K = config['k']
-GAMMA = config['gamma']
-TAU = config['tau']
-QUOTE_SIZE = config['quote_size']
-
-TRAIN_END = config['train_end']
+from config import GAMMA, TAU, K, QUOTE_SIZE, TRAIN_END
 
 def run(mid, sigma, events,
         strategy_cls = backtest.strategy.Strategy, strategy_kwargs = None,

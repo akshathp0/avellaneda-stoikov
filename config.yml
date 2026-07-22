@@ -18,8 +18,5 @@ slice_max: 5
 A: 1.13
 k: 0.47
 gamma: 7.2e-4 # originally 1e-3
-tau: 430 # originally 300
+tau: 7min # originally 5min
 quote_size: 0.01
-
-# symmetric strategy parameterss
-half_spread: 8.88

@@ -1,6 +1,5 @@
 __pycache__/
 *.pyc
-environment.yml
-.vscode/
 binance/
 .ipynb_checkpoints/
+.vscode/

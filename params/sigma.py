@@ -1,29 +1,11 @@
 import numpy as np
 import pandas as pd
-from pathlib import Path
-import yaml
 
-with open("config.yml", "r") as file:
-    config = yaml.safe_load(file)
-
-# sigma parameters:
-SIGMA_WINDOW = config['sigma_window']
-GRID_FREQUENCY = config['grid_frequency']
-HALF_LIFE = config['half_life']
-EWMA_WARMUP = config['ewma_warmup']
-
-TRAIN_END = config['train_end']
-
-def to_seconds(s) -> float:
-    if not isinstance(s, str):
-        raise TypeError("Must be string")
-    f = pd.Timedelta(s).total_seconds()
-
-    return f
+from config import GRID_FREQUENCY, BINANCE_PATH, SIGMA_WINDOW, HALF_LIFE, EWMA_WARMUP, TRAIN_END, to_seconds
 
 def build_mid(bt, grid_frequency = GRID_FREQUENCY) -> tuple[pd.DataFrame, pd.DataFrame]:
-    mid_path = Path(f'binance/mid_{grid_frequency}.parquet')
-    deduped_path = Path('binance/deduped.parquet')
+    mid_path = BINANCE_PATH / f'mid_{grid_frequency}.parquet'
+    deduped_path = BINANCE_PATH / 'deduped.parquet'
 
     if mid_path.exists() and deduped_path.exists():
         mid = pd.read_parquet(mid_path)
@@ -47,8 +29,8 @@ def estimate_rolling_vol(mid, grid_frequency = GRID_FREQUENCY, sigma_window = SI
     mid = mid['mid_price']
     dS = mid.diff() # increments
 
-    dt_seconds = to_seconds(grid_frequency)
-    var = dS.rolling(sigma_window).var() / dt_seconds 
+    dt = to_seconds(grid_frequency)
+    var = dS.rolling(sigma_window).var() / dt
     sigma = np.sqrt(var) 
     cutoff = sigma.index[0] + pd.Timedelta(sigma_window)
     sigma.loc[:cutoff] = np.nan
@@ -59,8 +41,8 @@ def estimate_ewma_vol(mid, grid_frequency = GRID_FREQUENCY, half_life = HALF_LIF
     mid = mid['mid_price']
     dS = mid.diff()
 
-    dt_seconds = to_seconds(grid_frequency)
-    var = dS.ewm(halflife = to_seconds(half_life) / dt_seconds).var() / dt_seconds # Var(delta(S)) / delta(T) yields $^2 / second
+    dt = to_seconds(grid_frequency)
+    var = dS.ewm(halflife = half_life / dt).var() / dt # Var(delta(S)) / delta(T) yields $^2 / second
     sigma = np.sqrt(var) # $ / sqrt(second)
     cutoff = sigma.index[0] + warmup * pd.Timedelta(half_life)
     sigma.loc[:cutoff] = np.nan
@@ -75,8 +57,8 @@ def measure_sigma(bt, grid_frequency, train_end = TRAIN_END) -> float:
     mid = mid['mid_price']
     mid = slice_window(mid, end = train_end)
     dS = mid.diff()
-    dt_seconds = to_seconds(grid_frequency)
-    var = dS.var() / dt_seconds 
+    dt = to_seconds(grid_frequency)
+    var = dS.var() / dt
     sigma = np.sqrt(var) 
 
     return sigma

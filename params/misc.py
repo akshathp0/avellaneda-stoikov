@@ -7,13 +7,8 @@ import pandas as pd
 from statsmodels.tsa.stattools import acf
 import params.sigma
 import backtest.run
-import yaml
 
-with open("config.yml", "r") as file:
-    config = yaml.safe_load(file)
-
-TAU = config['tau']
-K = config['k']
+from config import K, TAU, to_seconds
 
 def compute_tau(r) -> tuple[int, int]:
     # tau: timescale over which position persists
@@ -32,13 +27,14 @@ def sweep_half_life(mid, tau = TAU) -> dict:
     # half life: how long it takes for a measurement's weight to half
     # exponentially down-weight older squared increments when computing current vol
 
-    realized_var = ((mid.shift(-tau) - mid)**2) / tau # computing realized variance over tau window
+    tau_step = int(tau)
+    realized_var = ((mid.shift(-tau_step) - mid)**2) / tau_step # computing realized variance over tau window
 
     candidates = ['5min', '10min', '15min', '30min']
     qlikes = {}
     
     for h in candidates:
-        ewma_var = params.sigma.estimate_ewma_vol(mid, half_life = h)**2
+        ewma_var = params.sigma.estimate_ewma_vol(mid, half_life = to_seconds(h))**2
         df = pd.concat([ewma_var, realized_var], axis = 1, keys = ['ewma_var', 'realized_var'])
         df = params.sigma.slice_window(df).dropna()
         ratio = df['realized_var'] / df['ewma_var'] # realized variance over estimated variance

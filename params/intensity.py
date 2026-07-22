@@ -1,16 +1,7 @@
 import pandas as pd
 import numpy as np
-import yaml
 
-with open("config.yml", "r") as file:
-    config = yaml.safe_load(file)
-
-EVENT_GAP = config['event_gap']
-DELTA_MIN = config['delta_min']
-DELTA_MAX = config['delta_max']
-DELTA_POINTS = config['delta_points']
-SLICE_MIN = config['slice_min']
-SLICE_MAX = config['slice_max']
+from config import EVENT_GAP, DELTA_MIN, DELTA_MAX, DELTA_POINTS, SLICE_MIN, SLICE_MAX
 
 def match_trades(at, deduped) -> pd.DataFrame:
     at_c = at.copy()
