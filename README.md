@@ -99,4 +99,60 @@ adverse sweeps.
 
 Full sweep results: [results/gamma_sweep.csv](results/gamma_sweep.csv)
 
+---
 
+## Parameters
+
+| Parameter | Value | Method | Source |
+|---|---|---|---|
+| A | 1.13 /s | log-linear fit of λ(δ) | train, δ ∈ [$0.10, $5] |
+| k | 0.47 /$ | log-linear fit of λ(δ), slope | train, δ ∈ [$0.10, $5] |
+| τ | 430 s | inventory ACF 1/e relaxation time | train, γ = 1e-3 run |
+| EWMA half-life | 15 min | QLIKE vs τ-horizon realized variance | train |
+| γ | 7.2e-4 | inventory-variance saturation knee | γ sweep, train |
+| Grid frequency | 1 s | volatility signature plot | train |
+| Quote size | 0.01 BTC | fixed, below typical event size | — |
+
+---
+
+## Limitations & Future Work
+
+**Limitations**
+- Quoting cadence is 1s; production market makers requote in microseconds. Both strategies bear this handicap equally, so the comparison holds, but absolute fill dynamics are coarser than reality.
+- The exponential fill-intensity assumption holds only locally ($0.10–$5); the empirical tail is ~7 orders of magnitude heavier at $50 depth. The model cannot price deep-sweep fills.
+- Exchange fees, slippage, and queue position are not modeled. Fills assume the full quoted size executes when a sweep reaches the quote price.
+- Single symbol, single week. Parameters are regime-dependent (fill intensity A in particular varies substantially day to day).
+- The model has no adverse-selection defense beyond volatility-conditioned spreads.
+
+**Future Work**
+- Flow-toxicity conditioning (VPIN or signed order-flow imbalance) to widen or withdraw quotes ahead of informed flow, rather than reacting to realized volatility after the fact.
+- Directional alpha overlay: inventory and mid-price run in near-anti-phase, so a short-horizon directional signal could skew quotes with the move instead of accumulating against it.
+- Rolling parameter refitting (daily (A, k) re-estimation) to handle intensity regime shifts.
+- Finer quoting cadence (100ms grid) as a robustness check; the pipeline is already grid-parameterized.
+
+---
+
+## Reproducibility
+
+Raw data is not committed. Source files are Binance public daily dumps:
+
+- `BTCUSDT-bookTicker-2024-03-DD.zip`
+- `BTCUSDT-aggTrades-2024-03-DD.zip`
+
+available from [data.binance.vision](https://data.binance.vision), for March 24–30, 2024. Place them in `binance/`.
+
+```bash
+git clone https://github.com/akshathp0/avellaneda-stoikov.git
+cd avellaneda-stoikov
+conda env create -f environment.yml
+conda activate avellaneda-stoikov
+```
+
+Intermediate artifacts (1s mid grid, trade-book join, event frame) are cached to Parquet on first run and regenerate automatically if absent. Pipeline is run through the notebooks in `notebooks/`. All parameters live in `config.yml`.
+
+---
+ 
+## Contact
+ 
+**Akshath Pasam**
+[akshath@pasam.com] · [GitHub](https://github.com/akshathp0)
